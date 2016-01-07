@@ -12,14 +12,32 @@ defmodule PhoenixDown.UserView do
   def render("user.json", %{user: user}) do
     %{id: user.id,
       curp: user.curp,
-      edad: user.edad,
+      edad: get_age(user.fecha_nacimiento),
       sexo: user.sexo,
-      estatura: user.estatura,
-      peso: user.peso,
-      cintura: user.cintura,
-      colesterol: user.colesterol,
       apaterno: user.apaterno,
       amaterno: user.amaterno,
-      nombre: user.nombre}
+      nombre: user.nombre,
+      riesgo_colesterol: user.riesgo_colesterol,
+      riesgo_diabetes: user.riesgo_diabetes,
+      riesgo_rinones: user.riesgo_rinones,
+      riesgo_cancer_mama: user.riesgo_cancer_mama,
+      riesgo_hipertension: user.riesgo_hipertension,
+      riesgo_cancer_colon: user.riesgo_cancer_colon,
+
+      statuses: render_many(user.statuses, PhoenixDown.UserStatusView, "user_status.json")
+    }
+  end
+
+  defp get_age(dob) do
+    dob_in_days = dob
+    |> Ecto.Date.to_erl
+    |> :calendar.date_to_gregorian_days
+
+    today_in_days = Ecto.Date.utc()
+    |> Ecto.Date.to_erl
+    |> :calendar.date_to_gregorian_days
+
+    {age, _, _} = :calendar.gregorian_days_to_date(today_in_days - dob_in_days)
+    age
   end
 end

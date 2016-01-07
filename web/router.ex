@@ -22,6 +22,7 @@ defmodule PhoenixDown.Router do
     post "/login", UserController, :login_user, as: :login
     get "/logout", UserController, :logout, as: :logout
 
+    resources "/users/:user_id/user_statuses", UserStatusController, except: [:new, :edit]
     resources "/users", UserController, except: [:new, :edit]
   end
 
