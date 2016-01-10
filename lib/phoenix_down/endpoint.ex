@@ -35,5 +35,6 @@ defmodule PhoenixDown.Endpoint do
     key: "_phoenix_down_key",
     signing_salt: "GSpdfvSe"
 
+  plug CORSPlug
   plug PhoenixDown.Router
 end
