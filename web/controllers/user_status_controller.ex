@@ -12,7 +12,9 @@ defmodule PhoenixDown.UserStatusController do
     render(conn, "index.json", user_statuses: user.statuses)
   end
 
-  def create(conn, %{"user_id" => user_id, "user_status" => user_status_params} = params) do
+  def create(conn, %{"user_id" => user_id, "user_status" => _user_status_params} = params) do
+    IO.inspect(params);
+
     user = Repo.get!(User, user_id)
     changeset = User.insert_status_changeset(user, params)
 
@@ -50,14 +52,18 @@ defmodule PhoenixDown.UserStatusController do
     end
   end
 
-  def delete(conn, %{"user_id" => _user_id, "id" => id}) do
-    user_status = Repo.get!(UserStatus, id)
+  def delete(conn, %{"user_id" => user_id, "id" => id}) do
+    user = Repo.get!(User, user_id)
+    changeset = User.delete_status_changeset(user, id)
 
-    # Here we use delete! (with a bang) because we expect
-    # it to always work (and if it does not, it will raise).
-    Repo.delete!(user_status)
-
-    send_resp(conn, :no_content, "")
+    case Repo.update(changeset) do
+      {:ok, _user} ->
+        send_resp(conn, :no_content, "")
+      {:error, changeset} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> render(PhoenixDown.ChangesetView, "error.json", changeset: changeset)
+    end
   end
 
   defp get_user_status(user_id, status_id) do

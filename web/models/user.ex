@@ -4,6 +4,9 @@ defmodule PhoenixDown.User do
   alias Openmaize.Signup
   alias PhoenixDown.UserStatus
 
+  import MotorDeRiesgosConnection
+  import BigDataConnection
+
   schema "users" do
   ##Permanente (no historical storage)
     field :curp, :string #
@@ -17,6 +20,7 @@ defmodule PhoenixDown.User do
     field :email, :string ##
     field :nss, :string ##
     field :fecha_nacimiento, Ecto.Date #
+    field :cuestionario_tomado, :boolean, default: false
 
     # Riegos del 1 al 10
     field :riesgo_colesterol, :integer, default: 5
@@ -26,13 +30,15 @@ defmodule PhoenixDown.User do
     field :riesgo_hipertension, :integer, default: 5
     field :riesgo_cancer_colon, :integer, default: 5
 
-    embeds_many :statuses, UserStatus
+    embeds_many :statuses, UserStatus, [on_replace: :delete]
 
     timestamps
   end
 
-  @required_fields ~w(curp fecha_nacimiento)
-  @optional_fields ~w(apaterno password_hash amaterno nombre sexo role email nss statuses riesgo_colesterol riesgo_diabetes riesgo_rinones riesgo_cancer_mama riesgo_hipertension riesgo_cancer_colon)
+  @required_fields ~w(curp fecha_nacimiento email)
+  @optional_fields ~w(apaterno password_hash amaterno nombre sexo role nss statuses riesgo_colesterol
+    riesgo_diabetes riesgo_rinones riesgo_cancer_mama riesgo_hipertension riesgo_cancer_colon
+    cuestionario_tomado)
 
   @doc """
   Creates a changeset based on the `model` and `params`.
@@ -53,10 +59,22 @@ defmodule PhoenixDown.User do
   end
 
   def insert_status_changeset(model, %{"user_status" => user_status} = params) do
-    changes = changeset(model, params)
+    params = Map.merge(obtener_usuario(model.curp), user_status)
+    |> obtener_riesgos
+    |> Map.merge(params)
+
+    changes = changeset(model, Map.put(params, "cuestionario_tomado", true))
     status = UserStatus.changeset(%UserStatus{}, user_status)
 
     put_embed(changes, :statuses, [status | model.statuses])
+  end
+
+  def delete_status_changeset(model, status_id) do
+    statuses = Enum.reject(model.statuses, fn status -> status.id == status_id end)
+
+    model
+    |> change
+    |> put_embed :statuses, statuses
   end
 
   def get_last_status(user) do
